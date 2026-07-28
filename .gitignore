@@ -1,0 +1,50 @@
+# ---------------------------------------------------------------------------
+# NO DATA FILES IN GIT.
+#
+# Datasets for this course are distributed as GitHub *release assets*, never as
+# committed files. Git stores every version of every blob forever, so a single
+# accidental 48 MB commit permanently bloats every clone that follows, and it
+# cannot be removed without rewriting history.
+#
+# If you need to add a dataset, attach it to a release. Do not commit it.
+# ---------------------------------------------------------------------------
+
+# Columnar / binary data formats
+*.parquet
+*.pq
+*.orc
+*.avro
+*.feather
+*.arrow
+
+# Databases
+*.duckdb
+*.duckdb.wal
+*.db
+*.sqlite
+*.sqlite3
+
+# Bulk text data
+*.csv
+*.tsv
+*.jsonl
+*.ndjson
+
+# Archives
+*.zip
+*.gz
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.tar
+
+# Local working directories
+data/
+raw/
+tmp/
+scratch/
+
+# OS noise
+.DS_Store
+Thumbs.db
