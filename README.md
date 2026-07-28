@@ -14,9 +14,31 @@ So the exact bytes used to build the course are pinned here as **release assets*
 never change. The data files are **not** committed to git; they are attached to a tagged
 release and served over HTTPS.
 
+There is a second reason, and it is just as load-bearing: **a course video that names a
+host is a promise that the host will still be running in three years.** Personal servers,
+bare IP addresses and self-hosted APIs do not survive that long, and when one dies it takes
+the lesson with it silently. Nothing in this repository is a server. A pinned file with a
+published SHA-256 has no administrator, no billing relationship, no firewall rule, and no
+port to be blocked. That is why the rental-schema dataset below ships as a file rather than
+as a database endpoint.
+
 ---
 
-## What is in the pinned release
+## Datasets
+
+| Release tag | What it is | Used by |
+|---|---|---|
+| [`nyc-taxi-2024-01`](https://github.com/Business-Analytics-at-Gies/badm554-data/releases/tag/nyc-taxi-2024-01) | NYC TLC yellow taxi trips, January 2024. About 3 million rows of denormalized event data, plus a zone lookup. | Dimensional-modelling worked example: build a star schema, then break its grain. |
+| [`pagila-3.0.0`](https://github.com/Business-Analytics-at-Gies/badm554-data/releases/tag/pagila-3.0.0) | Pagila, the PostgreSQL port of the Sakila DVD-rental sample database. 15 normalized tables. | Reading a normalized transactional schema, and the end-to-end ETL worked example that extracts from it and loads a star. |
+
+The two are deliberately different shapes. The taxi extract is one wide table of events; the
+rental database is many narrow tables with foreign keys between them. The course uses the
+first to teach what a warehouse looks like and the second to teach what you have to extract
+*from*.
+
+---
+
+# Dataset 1: NYC yellow taxi, January 2024
 
 Release tag: **`nyc-taxi-2024-01`**
 
@@ -186,6 +208,171 @@ above.
 
 Neither the TLC nor the City of New York endorses this repository, this course, or the
 University of Illinois.
+
+---
+
+# Dataset 2: Pagila (Sakila rental schema)
+
+Release tag: **`pagila-3.0.0`**
+
+Pagila is the PostgreSQL port of Sakila, the DVD-rental sample database originally
+developed by Mike Hillyer of the MySQL AB documentation team. It is a textbook teaching
+artifact: fifteen normalized tables, real foreign keys, and a schema deliberately built to
+make you join.
+
+| Asset | Size (bytes) | SHA-256 |
+|---|---|---|
+| `pagila.duckdb` | 4,730,880 | `9deae7bf23f5e73aece8d9afa79b3772ac312f0e3b9db528dfdd127bdb5c3453` |
+| `pagila.dump` | 866,146 | `3fde6c7c82fb1a026f82feab08b7ebaa562b060de35601f2c421290ce57fb5f0` |
+| `pagila.sql` | 3,360,894 | `e3660097aa47a4bb1fb68d004e3cffb141450f8bac57e6f02bf3223a88dda919` |
+
+- **`pagila.duckdb`** is a DuckDB 1.5.5 database holding all fifteen base tables. This is
+  the artifact the course uses. Open it and query; there is nothing to install or restore.
+- **`pagila.dump`** is a `pg_dump` custom-format archive (`--no-owner --no-privileges`), for
+  anyone who wants the schema in a real PostgreSQL server. Requires `pg_restore`.
+- **`pagila.sql`** is the same database as plain SQL, loadable with `psql` alone.
+
+**Verified row counts** (DuckDB 1.5.5, read from `pagila.duckdb`):
+
+| Table | Rows | | Table | Rows |
+|---|---|---|---|---|
+| `actor` | 200 | | `film_category` | 2,367 |
+| `address` | 603 | | `inventory` | 4,581 |
+| `category` | 16 | | `language` | 6 |
+| `city` | 600 | | `payment` | 16,049 |
+| `country` | 109 | | `rental` | 16,044 |
+| `customer` | 599 | | `staff` | 1,500 |
+| `film` | 1,000 | | `store` | 500 |
+| `film_actor` | 5,462 | | | |
+
+`payment.payment_id` is unique across all 16,049 rows, so a one-row-per-payment grain
+assertion holds on this data.
+
+Note that Pagila 3.0.0 ships **1,500 staff rows and 500 stores**, not the two and two of the
+original MySQL Sakila. That is upstream data, not a build error, and it is worth knowing
+before you write a query that assumes a two-store business.
+
+## Provenance
+
+**Upstream source:** <https://github.com/devrimgunduz/pagila> (Pagila 3.0.0).
+
+| Item | Value |
+|---|---|
+| Branch | `master` |
+| Commit pinned | `5ba5a57aeb159f75f02aca2432d3c262186d13d3` (2024-12-01) |
+| `pagila-schema.sql` SHA-256 | `8ce358e4c8014087b85296694a0893887bd7a4190e3ce407f2721b86b98e5707` |
+| `pagila-data.sql` SHA-256 | `880580fb2cd4daaa99f290ced264988cdd657b3158be63cd281466f796f6dbf2` |
+| Pinned on | 2026-07-28 |
+
+**Build path.** The two upstream SQL files were loaded into a local PostgreSQL 17.10
+instance. `pagila.dump` and `pagila.sql` are `pg_dump` output from that database.
+`pagila.duckdb` was built by attaching that same PostgreSQL database from DuckDB 1.5.5 and
+copying each base table across, so the three artifacts describe one build, not three.
+
+**Two differences between the DuckDB file and the PostgreSQL dumps, stated plainly:**
+
+1. Upstream `payment` is a partitioned table with seven monthly partitions
+   (`payment_p2022_01` through `payment_p2022_07`). The PostgreSQL dumps preserve the
+   partitioning. The DuckDB file collapses it into one `payment` table of 16,049 rows.
+   Partitioning is a physical storage detail, not part of what the schema teaches here.
+2. The DuckDB file carries **base tables only**. Upstream views, functions, triggers and the
+   full-text index are in the PostgreSQL dumps and not in the DuckDB file.
+
+## Why a file and not a server
+
+M6 of the course teaches extract, transform and load. It would be tidier for the extract
+stage to open a connection to a real PostgreSQL server, and that option was considered
+seriously. It was rejected because the video outlives the server. A hostname spoken on
+camera is a three-year commitment to keeping that host alive, reachable, and credentialed,
+on someone's personal billing. Outbound port 5432 is also blocked on a meaningful number of
+corporate and home networks, which produces a silent hang rather than an error for exactly
+the learner who has no instructor to ask at 11pm.
+
+A pinned file gives up one thing, named precisely: learners do not watch someone type a
+host, port, user and password. Everything else about the lesson is unchanged, because
+extract is reading, and reading a file is still reading.
+
+## Usage
+
+### Query it directly, no download
+
+DuckDB can attach the release asset over HTTPS.
+
+```sql
+INSTALL httpfs; LOAD httpfs;
+ATTACH 'https://github.com/Business-Analytics-at-Gies/badm554-data/releases/download/pagila-3.0.0/pagila.duckdb'
+  AS pagila (READ_ONLY);
+
+SELECT count(*) AS rentals FROM pagila.rental;
+-- 16044
+```
+
+### Download once, then work locally
+
+```bash
+curl -L -O https://github.com/Business-Analytics-at-Gies/badm554-data/releases/download/pagila-3.0.0/pagila.duckdb
+shasum -a 256 pagila.duckdb   # optional integrity check
+```
+
+```python
+import duckdb
+src = duckdb.connect("pagila.duckdb", read_only=True)
+rentals = src.sql("SELECT * FROM rental").df()
+films   = src.sql("SELECT * FROM film").df()
+```
+
+### Load it into PostgreSQL instead
+
+```bash
+curl -L -O https://github.com/Business-Analytics-at-Gies/badm554-data/releases/download/pagila-3.0.0/pagila.dump
+createdb pagila
+pg_restore --no-owner --no-privileges -d pagila pagila.dump
+```
+
+Or, without `pg_restore`:
+
+```bash
+curl -L -O https://github.com/Business-Analytics-at-Gies/badm554-data/releases/download/pagila-3.0.0/pagila.sql
+createdb pagila
+psql -d pagila -f pagila.sql
+```
+
+### The join that the schema exists to teach
+
+A rental does not point at a film. It points at the physical copy that was rented, and the
+copy points at the film.
+
+```sql
+SELECT r.rental_id, c.first_name, c.last_name, f.title, p.amount
+FROM rental r
+JOIN inventory i ON r.inventory_id = i.inventory_id
+JOIN film      f ON i.film_id      = f.film_id
+JOIN customer  c ON r.customer_id  = c.customer_id
+LEFT JOIN payment p ON p.rental_id = r.rental_id
+LIMIT 5;
+```
+
+## Attribution and terms
+
+**Licence, stated as verified rather than as assumed.** The upstream repository's
+[`LICENSE.txt`](https://github.com/devrimgunduz/pagila/blob/master/LICENSE.txt) is a
+verbatim MIT-style permission grant, copyright Devrim Gunduz, permitting use, copying,
+modification, publication and distribution with the notice retained. The upstream
+[README](https://github.com/devrimgunduz/pagila) separately says the database "is made
+available under PostgreSQL license". Both are permissive and both plainly allow this
+redistribution. The discrepancy is upstream's and is recorded here rather than resolved.
+GitHub's own licence detector reports `NOASSERTION` for the repository, because the file is
+named `LICENSE.txt` and opens with a `# Licence` heading rather than a recognised SPDX
+header. No claim is made here beyond what those two upstream files say.
+
+Suggested credit line:
+
+> Source: Pagila (https://github.com/devrimgunduz/pagila), a PostgreSQL port of the MySQL
+> Sakila sample database originally developed by Mike Hillyer of the MySQL AB documentation
+> team.
+
+Neither Devrim Gunduz, the PostgreSQL project, nor Oracle endorses this repository, this
+course, or the University of Illinois.
 
 ---
 

@@ -24,6 +24,10 @@
 *.sqlite
 *.sqlite3
 
+# Database dumps
+*.dump
+*.backup
+
 # Bulk text data
 *.csv
 *.tsv
