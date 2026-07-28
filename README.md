@@ -50,8 +50,8 @@ Release tag: **`nyc-taxi-2024-01`**
 
 **Upstream `Last-Modified` at pin time:**
 
-- `yellow_tripdata_2024-01.parquet` — Thu, 21 Mar 2024 15:35:44 GMT
-- `taxi_zone_lookup.csv` — Thu, 22 Feb 2024 21:33:00 GMT
+- `yellow_tripdata_2024-01.parquet`: Thu, 21 Mar 2024 15:35:44 GMT
+- `taxi_zone_lookup.csv`: Thu, 22 Feb 2024 21:33:00 GMT
 
 The assets in this release were verified byte-identical to the upstream files at pin
 time by SHA-256 comparison.
