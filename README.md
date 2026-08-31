@@ -228,6 +228,8 @@ make you join.
 
 - **`pagila.duckdb`** is a DuckDB 1.5.5 database holding all fifteen base tables. This is
   the artifact the course uses. Open it and query; there is nothing to install or restore.
+- **[`docs/pagila-erd.md`](docs/pagila-erd.md)** is the schema diagram for those fifteen
+  tables, rendered by GitHub right in the browser. Read it before you write your first join.
 - **`pagila.dump`** is a `pg_dump` custom-format archive (`--no-owner --no-privileges`), for
   anyone who wants the schema in a real PostgreSQL server. Requires `pg_restore`.
 - **`pagila.sql`** is the same database as plain SQL, loadable with `psql` alone.
